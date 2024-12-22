@@ -79,57 +79,105 @@ class ProductController extends Controller
 
     }
     //this method will update product in db
+    // public function update($id, Request $request)
+    // {
+    //     $product = Product::findOrFail($id);
+
+    //     $rules = [
+    //         'name' => 'required|min:5',
+    //         'sku' => 'required|min:3',
+    //         'price' => 'required|numeric',
+    //     ];
+    //     $validator = Validator::make($request->all(), $rules);
+
+    //     if ($request->image != ""){
+    //         $rules['image'] = 'image';
+    //     }
+
+    //     if ($validator->fails())
+    //     {
+    //         return redirect()->route('products.edit',$product->id)->withInput()->withErrors($validator);
+    //     }
+
+    //     //here we will update product in db
+    //     $product->name = $request->name;
+    //     $product->sku = $request->sku;
+    //     $product->price = $request->price;
+    //     $product->description = $request->description;
+    //     $product->save();
+
+
+    //     if($request->image != " "){
+
+    //     //delete the old image
+    //     File::delete(public_path("uploads/product/".$product->image));
+    //     //here we will store Images in db
+    //     $image = $request->image;
+    //     $ext = $image->getClientOriginalExtension();
+    //     $imageName = time().'.'.$ext; //Unique image name eg 123456.jpg
+
+    //     //Save  image Public -> Product directory
+    //     $image->move(public_path('uploads/products/'), $imageName);
+
+
+    //     //save image in database
+    //     $product->image = $imageName;
+    //     $product->save();
+    //     }
+
+       
+
+    //     return redirect()->route('products.index')->with('success','Products Updated successfully');        
+        
+
+    // }
+
     public function update($id, Request $request)
     {
         $product = Product::findOrFail($id);
-
+    
+        // Validation rules
         $rules = [
             'name' => 'required|min:5',
             'sku' => 'required|min:3',
             'price' => 'required|numeric',
+            'image' => 'nullable|image', // Allow image to be optional
         ];
         $validator = Validator::make($request->all(), $rules);
-
-        if ($request->image != ""){
-            $rules['image'] = 'image';
+    
+        if ($validator->fails()) {
+            return redirect()->route('products.edit', $product->id)
+                ->withInput()
+                ->withErrors($validator);
         }
-
-        if ($validator->fails())
-        {
-            return redirect()->route('products.edit',$product->id)->withInput()->withErrors($validator);
-        }
-
-        //here we will update product in db
+    
+        // Update product details
         $product->name = $request->name;
         $product->sku = $request->sku;
         $product->price = $request->price;
         $product->description = $request->description;
-        $product->save();
-
-
-        if($request->image != " "){
-
-        //delete the old image
-        File::delete(public_path("uploads/product/".$product->image));
-        //here we will store Images in db
-        $image = $request->image;
-        $ext = $image->getClientOriginalExtension();
-        $imageName = time().'.'.$ext; //Unique image name eg 123456.jpg
-
-        //Save  image Public -> Product directory
-        $image->move(public_path('uploads/products/'), $imageName);
-
-
-        //save image in database
-        $product->image = $imageName;
-        $product->save();
+    
+        // Handle image update if an image is provided
+        if ($request->hasFile('image')) {
+            // Delete the old image if it exists
+            if ($product->image) {
+                File::delete(public_path("uploads/products/" . $product->image));
+            }
+    
+            // Save the new image
+            $image = $request->file('image');
+            $ext = $image->getClientOriginalExtension();
+            $imageName = time() . '.' . $ext; // Unique image name, e.g., 123456.jpg
+    
+            $image->move(public_path('uploads/products/'), $imageName);
+    
+            // Update the image in the database
+            $product->image = $imageName;
         }
-
-       
-
-        return redirect()->route('products.index')->with('success','Products Updated successfully');        
-        
-
+    
+        $product->save();
+    
+        return redirect()->route('products.index')->with('success', 'Product updated successfully');
     }
     //this method will delete product from db
     public function destroy($id)
